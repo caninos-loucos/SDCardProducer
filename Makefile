@@ -13,7 +13,6 @@ all: clean
 	$(Q)$(CPP) $(CPPFLAGS) -c $(SRCDIR)/myframe.cpp -o $(LINUXDIR)/myframe.o
 	$(Q)$(CPP) $(CPPFLAGS) -c $(SRCDIR)/main.cpp -o $(LINUXDIR)/main.o
 	$(Q)$(CPP) $(LIBS) $(LINUXDIR)/main.o $(LINUXDIR)/myframe.o -o $(LINUXDIR)/cardproducer
-	$(Q)cp -R $(RESDIR)/*.bmp $(LINUXDIR)
 
 clean:
 	$(Q)rm -rf $(LINUXDIR)
