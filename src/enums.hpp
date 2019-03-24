@@ -3,7 +3,6 @@
 
 enum
 {
-    ID_ABOUT  = 1,
     ID_PRESET = 4,
 };
 
