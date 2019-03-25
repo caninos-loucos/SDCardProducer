@@ -290,6 +290,8 @@ private:
 	
 	int MatchPreset();
 	
+	friend class OpenSavePanel;
+	
 	wxPanel *CreatePresetPanel(wxWindow *parent, int &maxSize);
 	wxPanel *CreateMemConfigPanel(wxWindow *parent, int &maxSize, int index);
 	wxPanel *CreateBootConfigPanel(wxWindow *parent, int &maxSize, int index);

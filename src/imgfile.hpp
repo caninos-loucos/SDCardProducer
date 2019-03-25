@@ -2,7 +2,7 @@
 #define _IMGFILE_HPP_
 
 #include <wx/wx.h>
-#include <wx/wfstream.h>
+#include <cstdio>
 #include "enums.hpp"
 
 class WorkThread;
@@ -48,6 +48,8 @@ private:
 	
 	bool IsWorkerRunning();
 	
+	void FillBlock();
+	
 	friend class WorkThread;
 	
 	wxBitmapButton *openButton;
@@ -56,8 +58,10 @@ private:
 	WorkThread *worker;
 	wxCriticalSection workercs;
 	
+	uint8_t *firstFileBlock;
+	
 	struct Partition *partitions;
-	wxFileStream *stream;
+	FILE *stream;
 	wxString filename;
 	bool loaded;
 	bool valid;

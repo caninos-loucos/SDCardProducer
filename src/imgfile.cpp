@@ -2,10 +2,32 @@
 #include "myframe.hpp"
 #include "../resources/open.xpm"
 #include "../resources/save.xpm"
+#include "../resources/fstage.h"
+#include <cstring>
 
 #define SECTOR (512)
+#define BLOCKSZ (4096)
 
 #define MAX_PARTITIONS (4)
+
+#define ROM_READ_SDCARD (0)
+#define ROM_READ_EMMC   (2)
+#define ROM_READ_NAND   (3)
+#define ROM_READ_SPINOR (4)
+
+#define FIRST_STAGE_OFF  (0x200)
+#define FIRST_STAGE_SIZE (0x200)
+
+#define FWINFO_CUR_BOOT_DEV_OFF (0x300)
+#define FWINFO_DEF_BOOT_DEV_OFF (0x304)
+#define FWINFO_KERN_VERSION_OFF (0x308)
+#define FWINFO_EXEC_MODE_OFF    (0x30C)
+#define FWINFO_MEM_TYPE_OFF     (0x310)
+#define FWINFO_MEM_CAP_OFF      (0x314)
+#define FWINFO_MEM_BANK_OFF     (0x318)
+#define FWINFO_MEM_WIDTH_OFF    (0x31C)
+#define FWINFO_MEM_VOLT_OFF     (0x320)
+#define FWINFO_MEM_FREQ_OFF     (0x324)
 
 wxDEFINE_EVENT(MYWORKER_READY, wxThreadEvent);
 
@@ -37,6 +59,10 @@ private:
 	void DoOpen();
 	void DoSave();
 	int cmd;
+	
+	uint32_t dwchecksum(char * buf, int start, int length);
+	int AddChecksum(uint8_t *buffer, int offset);
+	
 };
 
 WorkThread::~WorkThread()
@@ -75,7 +101,7 @@ bool WorkThread::IsValidType(uint8_t type)
 
 void WorkThread::DoOpen()
 {
-	wxFileStream *stream;
+	FILE *stream = NULL;
 	wxString filename;
 	
 	parent->workercs.Enter();
@@ -84,12 +110,10 @@ void WorkThread::DoOpen()
 	
 	parent->workercs.Leave();
 	
-	stream = new wxFileStream(filename);
+	stream = fopen(filename.c_str(), "rb+");
 	
-	if (!stream->IsOk())
+	if (!stream)
 	{
-		delete stream;
-		
 		parent->workercs.Enter();
 		
 		parent->error = true;
@@ -98,15 +122,13 @@ void WorkThread::DoOpen()
 		return;
 	}
 	
-	int blocklen = (2 * SECTOR);
+	uint8_t *buffer = new uint8_t[BLOCKSZ];
 	
-	uint8_t buffer[blocklen];
-	
-	stream->Read(buffer, blocklen);
-	
-	if (stream->LastRead() != blocklen)
+	if (fread(buffer, 1, BLOCKSZ, stream) != BLOCKSZ)
 	{
-		delete stream;
+		fclose(stream);
+		
+		delete buffer;
 		
 		parent->workercs.Enter();
 		
@@ -211,13 +233,19 @@ void WorkThread::DoOpen()
 	parent->workercs.Enter();
 	
 	if (parent->stream) {
-		delete parent->stream;
+		fclose(parent->stream);
 	}
 	
 	parent->stream = stream;
 	parent->valid  = !invalidate;
 	parent->loaded = true;
 	parent->error  = false;
+	
+	if (parent->firstFileBlock) {
+		delete parent->firstFileBlock;
+	}
+	
+	parent->firstFileBlock = buffer;
 	
 	if (parent->partitions) {
 		delete parent->partitions;
@@ -228,9 +256,59 @@ void WorkThread::DoOpen()
 	parent->workercs.Leave();
 }
 
+uint32_t WorkThread::dwchecksum(char * buf, int start, int length)
+{
+    uint32_t sum = 0;
+    uint32_t * tmp_buf = (uint32_t *)buf;
+    int tmp_start = start / 4;
+    int tmp_length = length / 4;
+    int i;
+
+    for(i = tmp_start; i < tmp_length; i++) {
+        sum = sum + *(tmp_buf + i);
+    }
+    
+    return sum;
+}
+
+int WorkThread::AddChecksum(uint8_t *buffer, int offset)
+{
+    const int size = FIRST_STAGE_SIZE;
+    char *buf = (char*)(buffer + offset);
+    uint32_t sum;
+    
+    sprintf(buf + size - 12, "ActBrm%c%c", 0xaa, 0x55);
+    
+    sum = dwchecksum(buf, 0, size - 4);
+    sum += 0x1234;
+    
+    *((uint32_t*)(buf + size - 4)) = sum;
+    
+	return 0;
+}
+
 void WorkThread::DoSave()
 {
-	//
+	parent->workercs.Enter();
+	
+	uint8_t *buffer = parent->firstFileBlock;
+	
+	AddChecksum(buffer, FIRST_STAGE_OFF);
+	
+	rewind(parent->stream);
+	
+	if (fwrite(buffer, 1, BLOCKSZ, parent->stream) != BLOCKSZ)
+	{
+		parent->error = true;
+		
+		parent->workercs.Leave();
+		
+		return;
+	}
+	
+	parent->error = false;
+	
+	parent->workercs.Leave();
 }
 
 wxThread::ExitCode WorkThread::Entry()
@@ -325,7 +403,7 @@ int OpenSavePanel::CloseImage()
 	
 	if (stream)
 	{
-		delete stream;
+		fclose(stream);
 		stream = NULL;
 	}
 	
@@ -384,6 +462,8 @@ OpenSavePanel::OpenSavePanel(wxWindow *parent) : wxPanel(parent)
 	openBitmap = wxBitmap(open_xpm);
 	saveBitmap = wxBitmap(save_xpm);
 	
+	firstFileBlock = NULL;
+	
 	wxString str = wxT("Image filename:");
 	
 	wxStaticText *text = new wxStaticText(this, wxID_ANY, str);
@@ -428,11 +508,15 @@ OpenSavePanel::~OpenSavePanel()
 	}
 	
 	if (stream) {
-		delete stream;
+		fclose(stream);
 	}
 	
 	if (partitions) {
 		delete partitions;
+	}
+	
+	if (firstFileBlock) {
+		delete firstFileBlock;
 	}
 }
 
@@ -479,6 +563,59 @@ void OpenSavePanel::OnOpen(wxCommandEvent& event)
 	}
 }
 
+void OpenSavePanel::FillBlock()
+{
+	uint8_t *buffer = firstFileBlock;
+	
+	MyFrame *parent = dynamic_cast<MyFrame*>(GetParent());
+	
+	ConfigPanel *cfgPanel = parent->cfgPanel;
+	
+	memcpy(buffer + FIRST_STAGE_OFF, hex_fstage, FIRST_STAGE_SIZE);
+	
+	uint32_t *aux;
+	
+	aux = (uint32_t*)(buffer + FWINFO_CUR_BOOT_DEV_OFF);
+	
+	(*aux) = ROM_READ_SDCARD;
+	
+	aux = (uint32_t*)(buffer + FWINFO_DEF_BOOT_DEV_OFF);
+	
+	(*aux) = cfgPanel->bootcfgChoice[BOOTCFG_BOOTDISK]->GetSelection();
+	
+	aux = (uint32_t*)(buffer + FWINFO_KERN_VERSION_OFF);
+	
+	(*aux) = cfgPanel->bootcfgChoice[BOOTCFG_KVERSION]->GetSelection();
+	
+	aux = (uint32_t*)(buffer + FWINFO_EXEC_MODE_OFF);
+	
+	(*aux) = cfgPanel->bootcfgChoice[BOOTCFG_EXECMODE]->GetSelection();
+	
+	aux = (uint32_t*)(buffer + FWINFO_MEM_TYPE_OFF);
+	
+	(*aux) = cfgPanel->memcfgChoice[MEMCFG_TYPE]->GetSelection();
+	
+	aux = (uint32_t*)(buffer + FWINFO_MEM_CAP_OFF);
+	
+	(*aux) = cfgPanel->memcfgChoice[MEMCFG_CAP]->GetSelection();
+	
+	aux = (uint32_t*)(buffer + FWINFO_MEM_BANK_OFF);
+	
+	(*aux) = cfgPanel->memcfgChoice[MEMCFG_BANK]->GetSelection();
+	
+	aux = (uint32_t*)(buffer + FWINFO_MEM_WIDTH_OFF);
+	
+	(*aux) = cfgPanel->memcfgChoice[MEMCFG_BIT]->GetSelection();
+	
+	aux = (uint32_t*)(buffer + FWINFO_MEM_VOLT_OFF);
+	
+	(*aux) = cfgPanel->memcfgChoice[MEMCFG_VOLT]->GetSelection();
+	
+	aux = (uint32_t*)(buffer + FWINFO_MEM_FREQ_OFF);
+	
+	(*aux) = cfgPanel->memcfgChoice[MEMCFG_FREQ]->GetSelection();
+}
+
 void OpenSavePanel::OnSave(wxCommandEvent& event)
 {
 	if (IsWorkerRunning()) {
@@ -487,7 +624,9 @@ void OpenSavePanel::OnSave(wxCommandEvent& event)
 	
 	DisableGUI();
 	
-	worker = new WorkThread(this, THREAD_CMD_OPEN);
+	FillBlock();
+	
+	worker = new WorkThread(this, THREAD_CMD_SAVE);
   	
   	if(worker->Run() != wxTHREAD_NO_ERROR)
 	{

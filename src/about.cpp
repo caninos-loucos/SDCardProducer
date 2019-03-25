@@ -5,7 +5,7 @@
 #include "../resources/dogtag.xpm"
 #include "../resources/cancel.xpm"
 
-const static wxString appVersion(wxT("0.5"));
+const static wxString appVersion(wxT("0.6"));
 
 const static wxColour white(0xff, 0xff, 0xff);
 
@@ -20,6 +20,8 @@ void AboutPanel::DisableGUI()
 void AboutPanel::UpdateGUI()
 {
 	bool valid, loaded;
+	
+	aboutButton->Enable(true);
 	
 	if (openPanel->IsValidImage(valid) < 0) {
 		return;

@@ -13,11 +13,11 @@ public:
 	MyFrame();
 	
 	void UpdateGUI();
-	
 	void DisableGUI();
 	
-private:
 	ConfigPanel *cfgPanel;
+	
+private:
 	OpenSavePanel *openPanel;
 	AboutPanel *aboutPanel;
 	InfoPanel *infoPanel;
