@@ -31,6 +31,10 @@ public:
 	
 	int CloseImage();
 	
+	void DisableGUI();
+	
+	void UpdateGUI();
+	
 private:
 	wxBitmap openBitmap;
 	wxBitmap saveBitmap;
@@ -43,8 +47,6 @@ private:
 	void OnThreadCompleted(wxThreadEvent& event);
 	
 	bool IsWorkerRunning();
-	
-	void UpdateGUI();
 	
 	friend class WorkThread;
 	

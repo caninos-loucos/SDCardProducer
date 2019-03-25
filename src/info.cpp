@@ -42,9 +42,14 @@ InfoPanel::InfoPanel(wxWindow *parent, OpenSavePanel *openPanel)
 	this->SetBackgroundColour(white);
 }
 
-void InfoPanel::OnThreadCompleted()
+void InfoPanel::DisableGUI()
 {
-	UpdateGUI();
+	scheme->Enable(false);
+	totsize->Enable(false);
+	
+	for (auto i = 0; i < 4; i++) {
+		partition[i]->Enable(false);
+	}
 }
 
 wxString InfoPanel::GetTypeName(uint8_t type)
@@ -218,7 +223,7 @@ wxPanel *InfoPanel::CreateSchemePanel(wxWindow *parent)
 	                        
 	scheme->Enable(false);
 	
-	sizer->Add(text  , 0, wxALIGN_CENTER);
+	sizer->Add(text, 0, wxALIGN_CENTER);
   	sizer->Add(scheme, 1, wxLEFT | wxALIGN_CENTER, 5);
   	
   	panel->SetBackgroundColour(white);
@@ -245,7 +250,7 @@ wxPanel *InfoPanel::CreateTotSizePanel(wxWindow *parent)
 	                        
 	totsize->Enable(false);
 	
-	sizer->Add(text   , 0, wxALIGN_CENTER);
+	sizer->Add(text, 0, wxALIGN_CENTER);
   	sizer->Add(totsize, 1, wxLEFT | wxALIGN_CENTER, 5);
   	
   	panel->SetBackgroundColour(white);

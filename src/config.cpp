@@ -59,6 +59,29 @@ ConfigPanel::ConfigPanel(wxWindow *parent) : wxPanel(parent)
   	
 	this->SetBackgroundColour(white);
 	this->SetSizer(mainSizer);
+	
+	Bind(wxEVT_CHOICE, &ConfigPanel::OnChoice, this, wxID_ANY);
+}
+
+void ConfigPanel::OnChoice(wxCommandEvent& event)
+{
+	if (event.GetId() == presetChoice->GetId())
+	{
+		int selection = presetChoice->GetSelection();
+		
+		if (selection == PRESET_CUSTOM)
+		{
+			selection = MatchPreset();
+			
+			presetChoice->SetSelection(selection);
+		}
+		
+		UpdateAccordingPreset(selection);
+	}
+	else
+	{
+		presetChoice->SetSelection(MatchPreset());
+	}
 }
 
 wxPanel *ConfigPanel::CreatePresetPanel(wxWindow *parent, int &maxSize)
@@ -164,11 +187,94 @@ wxPanel *ConfigPanel::CreateMemConfigPanel(wxWindow *parent, int &maxSize, int i
 	return panel;
 }
 
+int ConfigPanel::MatchPreset()
+{
+	for (auto i = 0; i < PRESET_COUNT; i++)
+	{
+		if (i != PRESET_CUSTOM)
+		{
+			const struct Preset *data = &mypresets[i];
+			
+			bool match = true;
+			int selection;
+			
+			selection = memcfgChoice[MEMCFG_TYPE]->GetSelection();
+			match &= (selection == data->memcfg[MEMCFG_TYPE]);
+			
+			selection = memcfgChoice[MEMCFG_CAP]->GetSelection();
+			match &= (selection == data->memcfg[MEMCFG_CAP]);
+			
+			selection = memcfgChoice[MEMCFG_BANK]->GetSelection();
+			match &= (selection == data->memcfg[MEMCFG_BANK]);
+			
+			selection = memcfgChoice[MEMCFG_BIT]->GetSelection();
+			match &= (selection == data->memcfg[MEMCFG_BIT]);
+			
+			selection = memcfgChoice[MEMCFG_VOLT]->GetSelection();
+			match &= (selection == data->memcfg[MEMCFG_VOLT]);
+			
+			selection = memcfgChoice[MEMCFG_FREQ]->GetSelection();
+			match &= (selection == data->memcfg[MEMCFG_FREQ]);
+	
+			selection = bootcfgChoice[BOOTCFG_KVERSION]->GetSelection();
+			match &= (selection == data->bootcfg[BOOTCFG_KVERSION]);
+			
+			selection = bootcfgChoice[BOOTCFG_BOOTDISK]->GetSelection();
+			match &= (selection == data->bootcfg[BOOTCFG_BOOTDISK]);
+			
+			selection = bootcfgChoice[BOOTCFG_EXECMODE]->GetSelection();
+			match &= (selection == data->bootcfg[BOOTCFG_EXECMODE]);
+			
+			if (match) {
+				return i;
+			}
+		}
+	}
+	
+	return PRESET_CUSTOM;
+}
+
+void ConfigPanel::UpdateGUI()
+{
+	presetChoice->Enable(true);
+	
+	memcfgChoice[MEMCFG_TYPE]->Enable(true);
+	memcfgChoice[MEMCFG_CAP ]->Enable(true);
+	memcfgChoice[MEMCFG_BANK]->Enable(true);
+	memcfgChoice[MEMCFG_BIT ]->Enable(true);
+	memcfgChoice[MEMCFG_VOLT]->Enable(true);
+	memcfgChoice[MEMCFG_FREQ]->Enable(true);
+	
+	bootcfgChoice[BOOTCFG_KVERSION]->Enable(true);
+	bootcfgChoice[BOOTCFG_BOOTDISK]->Enable(true);
+	bootcfgChoice[BOOTCFG_EXECMODE]->Enable(true);
+}
+	
+void ConfigPanel::DisableGUI()
+{
+	presetChoice->Enable(false);
+	
+	memcfgChoice[MEMCFG_TYPE]->Enable(false);
+	memcfgChoice[MEMCFG_CAP ]->Enable(false);
+	memcfgChoice[MEMCFG_BANK]->Enable(false);
+	memcfgChoice[MEMCFG_BIT ]->Enable(false);
+	memcfgChoice[MEMCFG_VOLT]->Enable(false);
+	memcfgChoice[MEMCFG_FREQ]->Enable(false);
+	
+	bootcfgChoice[BOOTCFG_KVERSION]->Enable(false);
+	bootcfgChoice[BOOTCFG_BOOTDISK]->Enable(false);
+	bootcfgChoice[BOOTCFG_EXECMODE]->Enable(false);
+}
+
 void ConfigPanel::UpdateAccordingPreset(int preset)
 {
+	if (preset == PRESET_CUSTOM) {
+		return;
+	}
+
 	const struct Preset *data = &mypresets[preset];
 	
-	this->presetChoice->SetSelection(preset);
+	presetChoice->SetSelection(preset);
 	
 	memcfgChoice[MEMCFG_TYPE]->SetSelection(data->memcfg[MEMCFG_TYPE]);
 	memcfgChoice[MEMCFG_CAP ]->SetSelection(data->memcfg[MEMCFG_CAP ]);

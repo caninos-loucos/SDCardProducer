@@ -9,7 +9,9 @@ class InfoPanel : public wxPanel
 public:
 	InfoPanel(wxWindow *parent, OpenSavePanel *openPanel);
 	
-	void OnThreadCompleted();
+	void UpdateGUI();
+	
+	void DisableGUI();
 	
 private:
 	wxTextCtrl *scheme;
@@ -17,8 +19,6 @@ private:
 	wxTextCtrl *partition[4];
 	
 	OpenSavePanel *openPanel;
-	
-	void UpdateGUI();
 	
 	wxPanel *CreateTotSizePanel(wxWindow *parent);
 	wxPanel *CreateSchemePanel(wxWindow *parent);

@@ -3,11 +3,6 @@
 
 enum
 {
-    ID_PRESET = 4,
-};
-
-enum
-{
 	MEMCFG_TYPE  = 0,
 	MEMCFG_CAP   = 1,
 	MEMCFG_BANK  = 2,

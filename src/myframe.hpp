@@ -12,7 +12,9 @@ class MyFrame : public wxFrame
 public:
 	MyFrame();
 	
-	void OnThreadCompleted();
+	void UpdateGUI();
+	
+	void DisableGUI();
 	
 private:
 	ConfigPanel *cfgPanel;

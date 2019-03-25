@@ -11,6 +11,10 @@ public:
 
 	void UpdateAccordingPreset(int preset);
 	
+	void UpdateGUI();
+	
+	void DisableGUI();
+	
 	struct Preset
 	{
 		const wxChar *name;
@@ -281,6 +285,10 @@ private:
 	
 	wxPanel *leftPanel;
 	wxPanel *rightPanel;
+	
+	void OnChoice(wxCommandEvent& event);
+	
+	int MatchPreset();
 	
 	wxPanel *CreatePresetPanel(wxWindow *parent, int &maxSize);
 	wxPanel *CreateMemConfigPanel(wxWindow *parent, int &maxSize, int index);

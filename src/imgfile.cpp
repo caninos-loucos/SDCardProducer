@@ -1,9 +1,10 @@
 #include "imgfile.hpp"
+#include "myframe.hpp"
 #include "../resources/open.xpm"
 #include "../resources/save.xpm"
-#include "myframe.hpp"
 
 #define SECTOR (512)
+
 #define MAX_PARTITIONS (4)
 
 wxDEFINE_EVENT(MYWORKER_READY, wxThreadEvent);
@@ -261,10 +262,6 @@ void OpenSavePanel::OnThreadCompleted(wxThreadEvent& event)
 	if (error) {
 		wxMessageBox(fileIOErrStr, errorStr, wxOK | wxICON_ERROR);
 	}
-	
-	MyFrame *parent = dynamic_cast<MyFrame*>(GetParent());
-	
-	parent->OnThreadCompleted();
 }
 
 int OpenSavePanel::IsValidImage(bool &valid)
@@ -314,6 +311,10 @@ void OpenSavePanel::UpdateGUI()
 		
 		filenameCtrl->Enable(false);
 	}
+	
+	MyFrame *parent = dynamic_cast<MyFrame*>(GetParent());
+	
+	parent->UpdateGUI();
 }
 
 int OpenSavePanel::CloseImage()
@@ -435,6 +436,18 @@ OpenSavePanel::~OpenSavePanel()
 	}
 }
 
+void OpenSavePanel::DisableGUI()
+{
+	openButton->Enable(false);
+  	saveButton->Enable(false);
+  	
+  	filenameCtrl->Enable(false);
+  	
+  	MyFrame *parent = dynamic_cast<MyFrame*>(GetParent());
+	
+	parent->DisableGUI();
+}
+
 void OpenSavePanel::OnOpen(wxCommandEvent& event)
 {
 	if (IsWorkerRunning()) {
@@ -450,18 +463,17 @@ void OpenSavePanel::OnOpen(wxCommandEvent& event)
     }
     
     filename = openFileDialog.GetPath();
-    
+	
+	DisableGUI();
+  	
     worker = new WorkThread(this, THREAD_CMD_OPEN);
   	
-  	if(worker->Run() == wxTHREAD_NO_ERROR)
-  	{
-  		openButton->Enable(false);
-  		saveButton->Enable(false);
-	}
-	else
+  	if(worker->Run() != wxTHREAD_NO_ERROR)
 	{
 		delete worker;
   		worker = NULL;
+  		
+  		UpdateGUI();
   		
   		wxMessageBox(createThreadErrStr, errorStr, wxOK | wxICON_ERROR);
 	}
@@ -471,6 +483,20 @@ void OpenSavePanel::OnSave(wxCommandEvent& event)
 {
 	if (IsWorkerRunning()) {
 		return;
+	}
+	
+	DisableGUI();
+	
+	worker = new WorkThread(this, THREAD_CMD_OPEN);
+  	
+  	if(worker->Run() != wxTHREAD_NO_ERROR)
+	{
+		delete worker;
+  		worker = NULL;
+  		
+  		UpdateGUI();
+  		
+  		wxMessageBox(createThreadErrStr, errorStr, wxOK | wxICON_ERROR);
 	}
 }
 

@@ -7,12 +7,18 @@ const static wxColour darkgrey(0x4f, 0x50, 0x49);
 
 const static int defaultPreset = PRESET_COREV2_FLASHING;
 
-// Icon made by Chanut from www.flaticon.com 
+void MyFrame::DisableGUI()
+{
+	aboutPanel->DisableGUI();
+	infoPanel->DisableGUI();
+	cfgPanel->DisableGUI();
+}
 
-void MyFrame::OnThreadCompleted()
+void MyFrame::UpdateGUI()
 {	
-	infoPanel->OnThreadCompleted();
-	aboutPanel->OnThreadCompleted();
+	infoPanel->UpdateGUI();
+	aboutPanel->UpdateGUI();
+	cfgPanel->UpdateGUI();
 }
 
 MyFrame::MyFrame(void) : 
@@ -22,6 +28,7 @@ MyFrame::MyFrame(void) :
   	this->SetBackgroundColour(darkgrey);
   	
   	openPanel = new OpenSavePanel(this);
+  	
   	infoPanel = new InfoPanel(this, openPanel);
   	cfgPanel = new ConfigPanel(this);
   	aboutPanel = new AboutPanel(this, openPanel);
