@@ -3,6 +3,7 @@
 #include "../resources/open.xpm"
 #include "../resources/save.xpm"
 #include "../resources/fstage.h"
+#include "../resources/sstage.h"
 #include <cstring>
 
 #define SECTOR (512)
@@ -10,10 +11,10 @@
 
 #define MAX_PARTITIONS (4)
 
-#define ROM_READ_SDCARD (0)
-#define ROM_READ_EMMC   (2)
-#define ROM_READ_NAND   (3)
-#define ROM_READ_SPINOR (4)
+#define BROM_DEV_SDCARD (0)
+#define BROM_DEV_EMMC   (2)
+#define BROM_DEV_NAND   (3)
+#define BROM_DEV_SPINOR (4)
 
 #define FIRST_STAGE_OFF  (0x200)
 #define FIRST_STAGE_SIZE (0x200)
@@ -305,6 +306,9 @@ void WorkThread::DoSave()
 		
 		return;
 	}
+
+	
+	
 	
 	parent->error = false;
 	
@@ -577,11 +581,18 @@ void OpenSavePanel::FillBlock()
 	
 	aux = (uint32_t*)(buffer + FWINFO_CUR_BOOT_DEV_OFF);
 	
-	(*aux) = ROM_READ_SDCARD;
+	(*aux) = BROM_DEV_SDCARD;
 	
 	aux = (uint32_t*)(buffer + FWINFO_DEF_BOOT_DEV_OFF);
 	
-	(*aux) = cfgPanel->bootcfgChoice[BOOTCFG_BOOTDISK]->GetSelection();
+	int selection = cfgPanel->bootcfgChoice[BOOTCFG_BOOTDISK]->GetSelection();
+	
+	if (selection == DISK_SDCARD) {
+		(*aux) = BROM_DEV_SDCARD;
+	}
+	else {
+		(*aux) = BROM_DEV_EMMC;
+	}
 	
 	aux = (uint32_t*)(buffer + FWINFO_KERN_VERSION_OFF);
 	
