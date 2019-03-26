@@ -65,16 +65,16 @@ wxString InfoPanel::GetTypeName(uint8_t type)
 		str = wxT("FAT12");
 		break;
 	case 0x04:
+	case 0x06:
+	case 0x0E:
 		str = wxT("FAT16");
 		break;
 	case 0x07:
 		str = wxT("NTFS");
 		break;
+	case 0x0B:
 	case 0x0C:
 		str = wxT("FAT32");
-		break;
-	case 0x0E:
-		str = wxT("FAT16B");
 		break;
 	case 0x82:
 		str = wxT("Swap");

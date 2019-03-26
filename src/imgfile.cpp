@@ -4,10 +4,10 @@
 #include "../resources/save.xpm"
 #include "../resources/fstage.h"
 #include "../resources/sstage.h"
+#include "../resources/uboot.h"
 #include <cstring>
 
-#define SECTOR (512)
-#define BLOCKSZ (4096)
+#define BLOCKSZ (0x100000) // 1MB
 
 #define MAX_PARTITIONS (4)
 
@@ -16,8 +16,14 @@
 #define BROM_DEV_NAND   (3)
 #define BROM_DEV_SPINOR (4)
 
-#define FIRST_STAGE_OFF  (0x200)
+#define FIRST_STAGE_OFF  (0x200) // LBA=1
 #define FIRST_STAGE_SIZE (0x200)
+
+#define SECOND_STAGE_OFF  (0x400) // LBA=2
+#define SECOND_STAGE_SIZE (0x8000)
+
+#define UBOOT_OFF  (0x8400) // LBA=66
+#define UBOOT_SIZE (0xF7C00)
 
 #define FWINFO_CUR_BOOT_DEV_OFF (0x300)
 #define FWINFO_DEF_BOOT_DEV_OFF (0x304)
@@ -88,7 +94,9 @@ bool WorkThread::IsValidType(uint8_t type)
 	case 0x00:
 	case 0x01:
 	case 0x04:
+	case 0x06:
 	case 0x07:
+	case 0x0B:
 	case 0x0C:
 	case 0x0E:
 	case 0x82:
@@ -296,6 +304,12 @@ void WorkThread::DoSave()
 	
 	AddChecksum(buffer, FIRST_STAGE_OFF);
 	
+	memset(buffer + SECOND_STAGE_OFF, 0, SECOND_STAGE_SIZE);
+	memcpy(buffer + SECOND_STAGE_OFF, hex_sstage, sizeof(hex_sstage));
+	
+	memset(buffer + UBOOT_OFF, 0, UBOOT_SIZE);
+	memcpy(buffer + UBOOT_OFF, hex_uboot, sizeof(hex_uboot));
+	
 	rewind(parent->stream);
 	
 	if (fwrite(buffer, 1, BLOCKSZ, parent->stream) != BLOCKSZ)
@@ -306,9 +320,6 @@ void WorkThread::DoSave()
 		
 		return;
 	}
-
-	
-	
 	
 	parent->error = false;
 	
@@ -575,7 +586,9 @@ void OpenSavePanel::FillBlock()
 	
 	ConfigPanel *cfgPanel = parent->cfgPanel;
 	
-	memcpy(buffer + FIRST_STAGE_OFF, hex_fstage, FIRST_STAGE_SIZE);
+	memset(buffer + FIRST_STAGE_OFF, 0, FIRST_STAGE_SIZE);
+	
+	memcpy(buffer + FIRST_STAGE_OFF, hex_fstage, sizeof(hex_fstage));
 	
 	uint32_t *aux;
 	
