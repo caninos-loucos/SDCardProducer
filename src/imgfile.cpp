@@ -189,6 +189,8 @@ void WorkThread::DoOpen()
 	
 	uint32_t *aux = (uint32_t *)(buffer + 446);
 	
+	uint32_t diskSectorCount = 0;
+	
 	if (bootSig)
 	{
 		for (auto i = 0; i < MAX_PARTITIONS; i++)
@@ -219,13 +221,22 @@ void WorkThread::DoOpen()
 		
 			partitions[i].sectors = *aux;
 			aux++;
-		
+			
+			uint32_t diskSectors = partitions[i].lba;
+			
+			diskSectors += partitions[i].sectors;
+			
 			if (partitions[i].type != 0)
 			{
 				// no valid partition can be located before 1MB disk mark
 			
 				if (partitions[i].lba < 2048) {
 					invalidate = true;
+				}
+				
+				if (diskSectors > diskSectorCount)
+				{
+					diskSectorCount = diskSectors;
 				}
 			}
 			
@@ -249,6 +260,8 @@ void WorkThread::DoOpen()
 	parent->valid  = !invalidate;
 	parent->loaded = true;
 	parent->error  = false;
+	
+	parent->diskSectorCount = diskSectorCount;
 	
 	if (parent->firstFileBlock) {
 		delete parent->firstFileBlock;
@@ -465,6 +478,16 @@ int OpenSavePanel::GetPartitionCount()
 	return 0;
 }
 
+int OpenSavePanel::GetDiskSectorCount(uint32_t &sectors)
+{
+	if (IsWorkerRunning()) {
+		return -1;
+	}
+	
+	sectors = diskSectorCount;
+	return 0;
+}
+
 bool OpenSavePanel::IsWorkerRunning()
 {
 	wxCriticalSectionLocker enter(workercs);
@@ -488,6 +511,7 @@ OpenSavePanel::OpenSavePanel(wxWindow *parent) : wxPanel(parent)
 	error = false;
 	stream = NULL;
 	partitions = NULL;
+	diskSectorCount = 0;
 	
   	filenameCtrl = 
   		new wxTextCtrl(this, wxID_ANY, emptyStr, wxDefaultPosition,

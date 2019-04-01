@@ -124,11 +124,26 @@ void InfoPanel::UpdateGUI()
 	}
 	else
 	{
+		struct OpenSavePanel::Partition data;
+		wxString str;
+		
 		scheme->Enable(true);
 		totsize->Enable(true);
 		
-		struct OpenSavePanel::Partition data;
-		wxString str;
+		uint32_t sectors = 0;
+		
+		openPanel->GetDiskSectorCount(sectors);
+		
+		if (sectors < 2)
+		{
+			str = wxString::Format(wxT("%u sector"), sectors);
+		}
+		else
+		{
+			str = wxString::Format(wxT("%u sectors"), sectors);
+		}
+		
+		totsize->SetValue(str);
 		
 		openPanel->GetPartition(0, data);
 		

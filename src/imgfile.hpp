@@ -29,6 +29,8 @@ public:
 	int GetPartition(int i, struct Partition &data);
 	int GetPartitionCount();
 	
+	int GetDiskSectorCount(uint32_t &sectors);
+	
 	int CloseImage();
 	
 	void DisableGUI();
@@ -59,6 +61,8 @@ private:
 	wxCriticalSection workercs;
 	
 	uint8_t *firstFileBlock;
+	
+	uint32_t diskSectorCount;
 	
 	struct Partition *partitions;
 	FILE *stream;
