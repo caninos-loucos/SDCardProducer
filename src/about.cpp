@@ -5,7 +5,7 @@
 #include "../resources/dogtag.xpm"
 #include "../resources/cancel.xpm"
 
-const static wxString appVersion(wxT("0.11"));
+const static wxString appVersion(wxT("0.12"));
 
 const static wxColour white(0xff, 0xff, 0xff);
 
