@@ -43,5 +43,7 @@ MyFrame::MyFrame(void) :
     sizer->Add(cfgPanel  , 1, wxEXPAND | (wxALL & ~(wxTOP)), 2);
     
   	this->SetSizer(sizer);
+  	
+  	this->Fit();
 }
 
